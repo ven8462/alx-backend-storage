@@ -13,16 +13,17 @@ import redis
 UnionOfTypes = Union[str, bytes, int, float]
 
 
-def replay(self, method):
-    """Display the history of calls of a particular function."""
-    key = "{}.{}".format(self.__class__.__name__, method.__qualname__)
-    input_key = "{}:inputs".format(key)
-    output_key = "{}:outputs".format(key)
-    inputs = self._redis.lrange(input_key, 0, -1)
-    outputs = self._redis.lrange(output_key, 0, -1)
-    print("{} was called {} times:".format(key, len(inputs)))
-    for input, output in zip(inputs, outputs):
-        print("{} -> {}".format(input, output))
+def replay(method: Callable) -> None:
+    """display the history of calls of a particular function
+    """
+    key = method.__qualname__
+    data = redis.Redis()
+    hist = data.get(key).decode("utf-8")
+    print("{} was called {} times:".format(key, hist))
+    inputs = data.lrange(key + ":inputs", 0, -1)
+    outputs = data.lrange(key + ":outputs", 0, -1)
+    for k, v in zip(inputs, outputs):
+        print(f"{key}(*{k.decode('utf-8')}) -> {v.decode('utf-8')}")
 
 
 def count_calls(method: Callable) -> Callable:
