@@ -1,34 +1,34 @@
 #!/usr/bin/env python3
-""" expiring web cache module """
+""" implements a get_page function (prototype: def get_page(url: str) -> str:)
+    The core of the function is very simple. It uses the requests module to
+    obtain the HTML content of a particular URL and returns it.
 
+    get_page tracks how many times a particular URL was accessed in the key
+    "count:{url}" and cache the result with an expiration time of 10 seconds.
+
+    Bonus: implement this use case with decorators.
+"""
 import redis
 import requests
-from typing import Callable
-from functools import wraps
 
-redis = redis.Redis()
-
-
-def wrap_requests(fn: Callable) -> Callable:
-    """ Decorator wrapper """
-
-    @wraps(fn)
-    def wrapper(url):
-        """ Wrapper for decorator guy """
-        redis.incr(f"count:{url}")
-        cached_response = redis.get(f"cached:{url}")
-        if cached_response:
-            return cached_response.decode('utf-8')
-        result = fn(url)
-        redis.setex(f"cached:{url}", 10, result)
-        return result
-
-    return wrapper
+count = 0
+cache = redis.Redis()
 
 
-@wrap_requests
 def get_page(url: str) -> str:
-    """get page self descriptive
+    """Obtains the HTML content of a particular URL and returns it.
+    Tracks how many times the URL was accessed and stores this
+    count in a Redis cache.
     """
-    response = requests.get(url)
-    return response.text
+    count = cache.get(f"count:{url}")
+    if count is None:
+        count = 0
+    else:
+        count = int(count)
+
+    resp = requests.get(url)
+
+    count += 1
+    cache.setex(f"count:{url}", 10, count)
+
+    return resp.text
