@@ -26,7 +26,6 @@ def replay(method: Callable) -> None:
         print(f"{key}(*{k.decode('utf-8')}) -> {v.decode('utf-8')}")
 
 
-
 def count_calls(method: Callable) -> Callable:
     """Increments a counter in Redis each time
     the method is called.
